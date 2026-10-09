@@ -1,0 +1,60 @@
+[package]
+name = "caffeinate-win"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "The macOS caffeinate command for Windows: keep the system and display awake from the command line"
+license = "MIT"
+repository = "https://github.com/metinata/caffeinate-win"
+readme = "README.md"
+keywords = ["caffeinate", "sleep", "awake", "power", "windows"]
+categories = ["command-line-utilities", "os::windows-apis"]
+include = [
+    "/src",
+    "/tests",
+    "/build.rs",
+    "/CHANGELOG.md",
+    "/LICENSE",
+    "/README.md",
+    "/THIRD-PARTY-NOTICES.md",
+]
+
+[[bin]]
+name = "caffeinate"
+path = "src/main.rs"
+
+[dependencies]
+lexopt = "0.3.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_Console",
+    "Win32_System_Environment",
+    "Win32_System_JobObjects",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Power",
+    "Win32_System_Registry",
+    "Win32_System_SystemServices",
+    "Win32_System_Threading",
+    "Win32_System_WindowsProgramming",
+    "Win32_UI_Input_KeyboardAndMouse",
+] }
+
+[build-dependencies]
+winresource = "0.1.31"
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+unused_qualifications = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

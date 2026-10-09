@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="caffeinate for Windows">
+  <defs>
+    <linearGradient id="mug" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D99058"/>
+      <stop offset="1" stop-color="#A65A2A"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="#94A3B8" stroke-width="5" stroke-linecap="round">
+    <path d="M42 36c-7-6 7-10 0-18"/>
+    <path d="M58 36c-7-6 7-10 0-18"/>
+    <path d="M74 36c-7-6 7-10 0-18"/>
+  </g>
+  <path d="M93 58h3a16 16 0 0 1 0 32h-3" fill="none" stroke="#A65A2A" stroke-width="9"/>
+  <path d="M24 44h68a4 4 0 0 1 4 4v42a18 18 0 0 1-18 18H38a18 18 0 0 1-18-18V48a4 4 0 0 1 4-4z" fill="url(#mug)"/>
+  <path d="M20 52h76" stroke="#E9A672" stroke-width="2" opacity=".6"/>
+  <g fill="none" stroke="#FFF4E6" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M38 66l11 9-11 9"/>
+    <path d="M56 86h20"/>
+  </g>
+</svg>

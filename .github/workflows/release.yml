@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+# Jobs widen these only where they need to.
+permissions:
+  contents: read
+
+# Never run two releases of the same tag at once.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read # check out the code
+      id-token: write # sign the provenance attestation (Sigstore)
+      attestations: write # store the attestation in this repository
+    strategy:
+      matrix:
+        target: [x86_64-pc-windows-msvc, aarch64-pc-windows-msvc]
+    env:
+      TARGET: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: rustup toolchain install stable --profile minimal --target $env:TARGET --no-self-update && rustup default stable
+
+      - name: Check that the tag matches Cargo.toml
+        shell: pwsh
+        run: |
+          $version = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages[0].version
+          if ("v$version" -ne $env:GITHUB_REF_NAME) {
+            throw "Tag $env:GITHUB_REF_NAME does not match version $version in Cargo.toml"
+          }
+
+      - name: Build
+        run: cargo build --release --locked --target $env:TARGET
+
+      - name: Package
+        shell: pwsh
+        run: |
+          # No version in the name, so that releases/latest/download/<name> always
+          # gets the newest one (install.ps1 relies on that).
+          $name = "caffeinate-$env:TARGET"
+          $staging = New-Item -ItemType Directory -Path "dist/$name"
+          Copy-Item -Destination $staging -Path `
+            "target/$env:TARGET/release/caffeinate.exe", `
+            README.md, LICENSE, CHANGELOG.md, THIRD-PARTY-NOTICES.md
+          Compress-Archive -Path "$staging/*" -DestinationPath "dist/$name.zip"
+          $hash = (Get-FileHash "dist/$name.zip" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $name.zip`n" | Out-File -FilePath "dist/$name.zip.sha256" -Encoding ascii -NoNewline
+
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/*.zip
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ matrix.target }}
+          path: |
+            dist/*.zip
+            dist/*.zip.sha256
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # create the GitHub release and upload its assets
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          # Print the section of this version, up to the next section or the link definitions.
+          awk -v heading="## [$version]" '
+            /^## \[/ { if (found) exit; if (index($0, heading) == 1) { found = 1; next } }
+            found && /^\[[^]]*\]: / { exit }
+            found
+          ' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::CHANGELOG.md has no notes for $version"
+            exit 1
+          fi
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then flags+=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" dist/* install.ps1 \
+            --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag "${flags[@]}"

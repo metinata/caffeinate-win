@@ -1,0 +1,58 @@
+name: Bug report
+description: Something does not work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! To report a security vulnerability,
+        follow [SECURITY.md](https://github.com/metinata/caffeinate-win/blob/main/SECURITY.md) instead.
+
+  - type: input
+    id: version
+    attributes:
+      label: caffeinate version
+      description: The output of `caffeinate --version`.
+      placeholder: caffeinate 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: From Settings → System → About, or the output of `winver`.
+      placeholder: Windows 11 24H2, x64
+    validations:
+      required: true
+
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran, and the shell you ran it in.
+      placeholder: caffeinate -d npm run build (PowerShell 7)
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include any error message and the exit code (`$LASTEXITCODE` in PowerShell, `%ERRORLEVEL%` in cmd).
+    validations:
+      required: true
+
+  - type: textarea
+    id: requests
+    attributes:
+      label: powercfg /requests output
+      description: For problems with sleep, the output of `powercfg /requests` from an elevated prompt while caffeinate runs.
+      render: text
